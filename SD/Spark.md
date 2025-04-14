@@ -42,5 +42,3 @@
 ---
 
 **When to Use Spark?** → For large-scale, fast data processing (ETL, analytics, ML).  
-
-Let me know if you'd like details on any specific feature!
