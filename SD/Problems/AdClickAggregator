@@ -1,0 +1,25 @@
+* Function Req
+* Non-Functional Req
+  - ask about the scale, like 10M AU and 10K clicks/sec
+* Data Flow
+* HLD
+  - user, ad place ment service and CLick Processing Service
+  - User clicks and gets clicke service give the redirect URL, ensures to capture click
+
+  - Good Sol: Use write heavy DB(Cassandra) for capturing the clicks
+     - Use Spark(data aggregator) with a chron job every 5 min to aggregate data and store in OLAP
+     - Advertisers will read data using analytics service from OLAP
+     - OLAP can handle multidimentions data for querying
+ - Great Sol: Use Kinesis and Flink for data processing.
+     - Click data is captured by Kinesis and FLink aggregates them
+     - Once the time window is reached flink sends the data to OLAP
+     - In Flink we can tune to aggregate and send data every 10s, but in Spark we can't do that.
+     - realtime aggregation is possible with Flink
+
+* Deep Dives
+  - How to scale 10K click/sec?
+    - Have hor scaling in Click processing Service, Flink ,OLAP
+    - Since Kinesis supports 1000 req/s , shard it based on AdId, so each shard has 1000 req/s
+    - Hot shards
+      - Distribute to different shards with random number(0...N), N-additonal partition req for AdId.
+      - by this way the thrittling is secured but we need to adjust flink to ignore this random number during agg.
