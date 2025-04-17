@@ -1,0 +1,40 @@
+* Functional Req:
+  - users can post comment on live video
+  - users can see new comments posted on the video
+  - users can see comments made before joining live video
+ --------
+   - reply coments
+   - react to comments
+
+* Non-Functional Req:
+  - scale supports millions of videos, 1000+ comments/s for a video
+  - availability > consistency, eventual consistency
+  - low latency, broadcast in near realtime(~200ms)
+--------
+  - provides integrity
+  - security, only authorized persons can comment
+
+* Entities:
+  - Users
+  - Video
+  - Comments
+ 
+* API & System Interface
+  - POST /comments/:liveVideoId
+  - GET /comments/:liveVideoId?cursor={last_comment_id}&pageSize=10&sort=desc
+ 
+* HLD:
+  - DB is made as Cassandra? Because it is highly avaialble and storing comment sdoesn't require relationships
+* Deep Dives:
+  - How can we ensure comments are broadcasted to viewers in real-time?
+    - HTTP polling will be slow, so Websockets vs SSE,
+    - Websockets: write comment and read comments are not balanced, so this is not good approach, uses its own protocol and not HTTP
+    - SSE is the best as the comments read>>> write, use HTTP post for comemnt write
+  - How will the system scale to support millions of concurrent viewers?
+    - Have Realtime Comment Management Service for collecting comments and COmment Service for handling comment write
+    - Millions of SSE has to scale with multiple Realtime Comment Services
+    - Bad Sol: Having a pub/Sub (Redis) so that Realtime Comment Services will listen to that sub and update the connection mapping
+    - Good Sol: Having pub/sub partitioned by videoId, have a has(videoId)%N channels, the Realtime Comment Services will read only videoId associated to it
+    - Great Sol:pub/sub with Layer 7 LB, the server will subscribe only to videoId the users connected to it are watching, you can use Zookeeper to do the mapping, Kafka pub/sub vs Redis pub/sub?
+    - Great Sol: Use Dispatcher which directly maps the Realtime Comment Service
+    - 
