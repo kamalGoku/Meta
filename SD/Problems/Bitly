@@ -1,0 +1,26 @@
+* Function Req
+* Non-Functional Req
+* Entities
+* API
+* HLD:
+  - Users should be able to submit a long URL and receive a shortened version
+  - Users should be able to access the original URL by using the shortened URL
+    - for short url query, response can be
+      - 301 redirect - permannetly moved
+      = 302 redirect - temporary redirect
+
+* Deep Dive:
+ 1) How can we ensure short urls are unique?
+  - Good Sol: random gen + Hash --> base62 encode, prone to collisions
+  - Great Sol: Having a counter ---> base62 to get 6 digit code. Redis to manage the INCR atomic
+ 2) How can we ensure that redirects are fast?
+  - Good Sol: Having a index
+  - Great Sol: Having Redis cache (write through, LRU) is much faster than SDD/HDD,
+  - Great Sol: CDN+Edge computing, having CDN will make faster, but cache invalidation overhead is added
+ 3) How can we scale to support 1B shortened urls and 100M DAU?
+  - each row of DB, 8B(short URL) + 100B(long URL) + 8B(creation Time) + 100B (custome alias) + 8B(expiry) ~200B , max of 500B 
+    500B * 1 Billion entries = 500GB of space
+  - having seperate service for read and write requests
+  - DB goes down? have a replica or gave a backup DB
+  - Have Redis to give counters for every write req, give a batch of counters(1000) for all write servers
+
