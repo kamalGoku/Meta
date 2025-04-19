@@ -1,136 +1,164 @@
-# Facebook Privacy Settings - Full System Design (Staff-Level)
+Here's the consolidated deep dive document incorporating all the inputs:
+
+```markdown
+# Facebook Privacy Settings - Comprehensive System Design (Staff-Level)
 
 ---
 
 ## Table of Contents
-1. Problem Statement
-2. Requirements
-3. Non-Functional Requirements
-4. Core Challenges
-5. High-Level Architecture
-6. Data Modeling
-7. Privacy Access Control Engine
-8. Caching Strategy
-9. Consistency & Freshness
-10. Security & Abuse Prevention
-11. Extensibility
-12. Trade-offs
-13. Operational Considerations
-14. Diagrams
-15. Mock Interview Q&A
+1. [Problem Statement](#1-problem-statement)
+2. [Requirements](#2-requirements)
+3. [Non-Functional Requirements](#3-non-functional-requirements)
+4. [Core Challenges](#4-core-challenges)
+5. [High-Level Architecture](#5-high-level-architecture)
+6. [Data Modeling](#6-data-modeling)
+7. [Privacy Access Control Engine](#7-privacy-access-control-engine)
+8. [Caching Strategy](#8-caching-strategy)
+9. [Consistency & Freshness](#9-consistency--freshness)
+10. [Security & Abuse Prevention](#10-security--abuse-prevention)
+11. [Extensibility](#11-extensibility)
+12. [Trade-offs](#12-trade-offs)
+13. [Operational Considerations](#13-operational-considerations)
+14. [Diagrams](#14-diagrams)
+15. [Mock Interview Q&A](#15-mock-interview-qa)
 
 ---
 
 ## 1. Problem Statement
-Design a privacy settings system for a social media platform like Facebook, enabling users to control who can access their content (posts, photos, profiles, etc.) with high granularity and scalability.
+Design a privacy settings system for Facebook that:
+- Enables granular control over content visibility (posts, profile info, photos)
+- Scales to billions of users and trillions of content items
+- Maintains low-latency access checks while supporting complex policies
+- Handles real-time updates to privacy settings and social graph changes
 
 ---
 
 ## 2. Requirements
 
 ### Functional Requirements
-- Users can define privacy settings at both global and per-entity levels.
-- Support privacy levels: `PUBLIC`, `FRIENDS`, `FRIENDS_OF_FRIENDS`, `ONLY_ME`, `CUSTOM`.
-- Allow defining and managing friend lists.
-- Support blocking and restricted access.
-- Privacy settings should apply in real-time or near real-time.
+- **Multi-level controls**:
+  - Global defaults (account-level)
+  - Content-type defaults (all posts vs all photos)
+  - Per-entity overrides (individual posts)
+- **Visibility options**:
+  - `PUBLIC`, `FRIENDS`, `FRIENDS_OF_FRIENDS`, `ONLY_ME`, `CUSTOM`
+  - "Friends except..." and "Specific friends" lists
+- **Dynamic management**:
+  - Create/manage friend lists ("Close Friends", "Work Colleagues")
+  - Block/restrict users
+  - Retroactive application of privacy changes
+- **Real-time enforcement**:
+  - Immediate effect for privacy setting changes
+  - Near real-time propagation for social graph changes
 
 ### Use Cases
-- User posts content with default settings.
-- User overrides post visibility.
-- Viewer requests access to content and system evaluates permissions.
+1. User posts content with inherited privacy settings
+2. User edits privacy for existing content
+3. Viewer attempts to access content with permission evaluation
+4. User modifies friend relationships affecting existing content visibility
 
 ---
 
 ## 3. Non-Functional Requirements
-- High availability (99.99%)
-- Low latency access checks (<100ms)
-- Horizontal scalability
-- Eventual consistency acceptable for reads; strong consistency for writes
-- Auditability and traceability
+| Requirement          | Target                  | Rationale                          |
+|----------------------|-------------------------|------------------------------------|
+| Availability         | 99.99%                  | Privacy is mission-critical        |
+| Read Latency         | <100ms p99              | Smooth user experience             |
+| Write Latency        | <500ms p99              | Responsive settings changes        |
+| Throughput           | 100K QPS minimum        | Global scale requirements          |
+| Consistency          | Strong for writes       | Prevent privacy violations         |
+| Audit Retention      | 7 years minimum         | Compliance requirements            |
 
 ---
 
 ## 4. Core Challenges
-- Expressive access policies
-- Highly dynamic social graph
-- Low-latency enforcement at massive scale
-- Managing precomputation vs real-time evaluation
+1. **Expressive Policies**: Supporting complex boolean logic (Friends AND NOT Colleagues)
+2. **Graph Traversal**: Efficiently evaluating friends-of-friends at scale
+3. **Freshness vs Performance**: Balancing immediate updates with system load
+4. **Content Velocity**: Handling privacy checks for high-volume content creation
+5. **Retroactive Changes**: Applying updates to historical content efficiently
 
 ---
 
 ## 5. High-Level Architecture
+
+```mermaid
+graph TD
+    A[Client] --> B[API Gateway]
+    B --> C[Privacy Settings Service]
+    C --> D[Privacy Check Engine]
+    D --> E[Graph Service]
+    D --> F[Content Service]
+    C --> G[Audit Service]
+    D --> H[ACL Cache]
+    H --> I[Redis]
+    E --> J[Social Graph DB]
+    F --> K[Content Store]
 ```
-+----------------------+      +---------------------+
-|     Client App       |<---->|     API Gateway     |
-+----------------------+      +---------------------+
-                                    |
-               +------------------------------------------+
-               |     Privacy Settings Service             |
-               +------------------+-----------------------+
-                                  |
-                                  v
-                     +---------------------------+
-                     |     ACL Computation       |
-                     +---------------------------+
-                                  |
-                                  v
-                +------------------------------------------+
-                |      Denormalized ACL Store (KV/Doc)     |
-                +------------------+-----------------------+
-                                  |
-                        +---------v----------+
-                        |   Caching Layer     |
-                        +---------------------+
-                                  |
-                        +---------v----------+
-                        |    Content Store    |
-                        +---------------------+
-```
+
+Key Components:
+1. **Privacy Settings Service**: Manages CRUD operations for privacy configurations
+2. **Privacy Check Engine**: Evaluates access requests against policies
+3. **Graph Service**: Provides real-time social graph data
+4. **ACL Cache**: Fast access to precomputed permissions
+5. **Audit Service**: Tracks all privacy-related changes
 
 ---
 
 ## 6. Data Modeling
 
-### User
+### Core Tables
 ```sql
-User(user_id, name, email, created_at)
+-- Privacy Settings
+CREATE TABLE privacy_settings (
+    id UUID PRIMARY KEY,
+    user_id UUID,
+    entity_type ENUM('post','photo','profile','story'),
+    entity_id UUID, -- NULL for default settings
+    visibility ENUM('PUBLIC','FRIENDS','FOF','ONLY_ME','CUSTOM'),
+    allow_list_id UUID, -- For CUSTOM visibility
+    deny_list_id UUID, -- For "except" cases
+    version INT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    INDEX (user_id, entity_type)
+) PARTITION BY HASH(user_id);
+
+-- Friend Lists
+CREATE TABLE friend_lists (
+    list_id UUID PRIMARY KEY,
+    user_id UUID,
+    name VARCHAR(255),
+    INDEX (user_id)
+);
+
+-- List Memberships (Denormalized for performance)
+CREATE TABLE list_memberships (
+    list_id UUID,
+    member_id UUID,
+    PRIMARY KEY (list_id, member_id)
+) PARTITION BY HASH(list_id);
+
+-- Blocked Users
+CREATE TABLE blocked_users (
+    user_id UUID,
+    blocked_id UUID,
+    created_at TIMESTAMP,
+    PRIMARY KEY (user_id, blocked_id)
+) PARTITION BY HASH(user_id);
 ```
 
-### Privacy Setting
-```sql
-PrivacySetting(
-  id UUID,
-  user_id,
-  entity_type ENUM('post', 'photo', 'profile'),
-  entity_id,
-  visibility ENUM('PUBLIC', 'FRIENDS', 'FOF', 'ONLY_ME', 'CUSTOM'),
-  allow_list_id UUID,
-  deny_list_id UUID,
-  created_at,
-  updated_at
-)
-```
-
-### Friend List
-```sql
-FriendList(list_id UUID, user_id, name)
-FriendListMembership(list_id UUID, friend_id UUID)
-```
-
-### Block List
-```sql
-BlockList(user_id, blocked_user_id)
-```
-
-### ACL Store
+### Denormalized ACL Store (Redis)
 ```json
-Key: acl:post:{post_id}
-Value: {
-  "owner_id": "user123",
-  "visibility": "CUSTOM",
-  "allowed_user_ids": ["u1", "u2"],
-  "denied_user_ids": ["u3"]
+{
+  "acl:post:12345": {
+    "owner": "user678",
+    "visibility": "CUSTOM",
+    "allowed": ["user123", "user456"],
+    "denied": ["user789"],
+    "version": 3,
+    "ttl": 3600
+  }
 }
 ```
 
@@ -138,106 +166,215 @@ Value: {
 
 ## 7. Privacy Access Control Engine
 
-### Evaluation Steps:
-1. Retrieve entity ACL from cache or KV store.
-2. If `PUBLIC`, allow.
-3. If `ONLY_ME`, allow only owner.
-4. If `FRIENDS`, check friendship.
-5. If `FOF`, perform 2-hop graph traversal.
-6. If `CUSTOM`, match against allow/deny lists.
-7. Check block list for both directions.
+### Evaluation Flowchart
+```mermaid
+graph TD
+    A[Start] --> B{Is owner?}
+    B -->|Yes| C[Allow]
+    B -->|No| D{Is blocked?}
+    D -->|Yes| E[Deny]
+    D -->|No| F{Get ACL}
+    F --> G{Visibility}
+    G -->|PUBLIC| H[Allow]
+    G -->|ONLY_ME| I[Deny]
+    G -->|FRIENDS| J{Check friendship}
+    G -->|FOF| K{Check 2-hop}
+    G -->|CUSTOM| L{Check lists}
+```
 
-### Design Considerations:
-- Cache ACLs for hot content.
-- Precompute `PostACL(user_id, post_id)` for fast lookup.
-- Use graph DB or adjacency lists for FOAF.
+Optimizations:
+- **Lazy Evaluation**: For FOF checks, use cached results when possible
+- **Short-circuiting**: Fail fast on block lists or ONLY_ME cases
+- **Batching**: Process multiple items in single graph queries
+- **Bloom Filters**: Efficiently check list membership for large groups
 
 ---
 
 ## 8. Caching Strategy
-- Use Redis for hot ACLs (TTL-based + event-driven invalidation).
-- Use Bloom Filters for large list membership.
-- Background job to refresh stale caches.
+
+### Multi-Layer Caching
+1. **Local Cache** (Per server, 1s TTL)
+   - Ultra-fast for hot content
+   - Invalidated via pub/sub
+2. **Distributed Cache** (Redis, 5m TTL)
+   - Shared across cluster
+   - Write-through pattern for consistency
+3. **Persistent Cache** (DynamoDB)
+   - Fallback for cache misses
+   - Async updates via event stream
+
+### Cache Key Design
+```
+acl:{entity_type}:{entity_id}:v{version}
+user:{user_id}:friends:version
+list:{list_id}:members:version
+```
 
 ---
 
 ## 9. Consistency & Freshness
 
-| Component        | Consistency     | Rationale                        |
-|------------------|------------------|----------------------------------|
-| Settings writes  | Strong           | Must immediately reflect change |
-| ACL cache        | Eventual         | Async updates acceptable        |
-| Friendship graph | Eventual         | Acceptable delay in FOAF logic  |
+### Consistency Matrix
+| Operation               | Consistency  | Mechanism                          |
+|-------------------------|--------------|------------------------------------|
+| Privacy setting update  | Strong       | Linearizable writes                |
+| Friend list change      | Eventual     | Async graph propagation            |
+| ACL reads               | Eventual     | Cache with versioning              |
+| Block list checks       | Strong       | Direct DB read                     |
 
-Tools:
-- Kafka or Pulsar for propagating updates
-- Zookeeper/Consul for leader election and failover
+### Update Propagation
+1. Write to primary datastore
+2. Publish change event to Kafka
+3. Consumers update:
+   - ACL cache
+   - Graph service indices
+   - Search indexes
 
 ---
 
 ## 10. Security & Abuse Prevention
-- Rate limit privacy changes
-- Log access evaluations
-- Encrypt sensitive fields
-- Protect against abuse via rapid visibility toggle
+
+### Protection Measures
+1. **Rate Limiting**:
+   - 5 privacy changes/second per user
+   - Bulk changes via async jobs
+2. **Audit Trail**:
+   - Immutable log of all changes
+   - Cryptographic signatures
+3. **Validation**:
+   - Schema validation for policies
+   - Cycle detection in block lists
+4. **Encryption**:
+   - Sensitive fields encrypted at rest
+   - TLS for all communications
 
 ---
 
 ## 11. Extensibility
-- Add new visibility levels: e.g., geography-based, age-restricted
-- Pluggable rule engine (e.g., DSL or policy engine like Zanzibar)
-- Support for Stories, Reels, future content types
+
+### Plugin Architecture
+```python
+class VisibilityPlugin:
+    def evaluate(self, viewer, content) -> bool
+
+# Example plugins:
+- GeographicPlugin (location-based)
+- TemporalPlugin (time-limited visibility)
+- DemographicPlugin (age/group restrictions)
+```
+
+### Policy DSL Example
+```json
+{
+  "operator": "AND",
+  "conditions": [
+    { "type": "friendship" },
+    { 
+      "type": "list_membership",
+      "list": "close_friends",
+      "negate": true
+    }
+  ]
+}
+```
 
 ---
 
 ## 12. Trade-offs
 
-| Option | Pros | Cons |
-|--------|------|------|
-| Precompute ACLs | Fast read | High write/load cost |
-| Real-time evaluation | Dynamic | Latency, complexity |
-| Graph DB | Flexible | Costly traversal |
-| Redis cache | Fast | Invalidation complexity |
+### Evaluation Strategies
+| Approach          | Pros                  | Cons                  |
+|-------------------|-----------------------|-----------------------|
+| Pre-computed ACLs | Fast reads            | High write overhead   |
+| Real-time eval    | Fresh results         | Latency spikes        |
+| Hybrid            | Balanced performance  | System complexity     |
+
+Selected: **Hybrid Approach**
+- Pre-compute for common cases (PUBLIC, FRIENDS)
+- Real-time for complex policies (CUSTOM, FOF)
 
 ---
 
 ## 13. Operational Considerations
-- Health checks and dashboards for ACL computation jobs
-- Dead-letter queues for failed updates
-- Backfill tools for rebuilding ACLs
-- Dark launches for new privacy rules
-- Canary deployments
+
+### Critical Metrics
+1. **Privacy check latency** (p95 < 200ms)
+2. **ACL build backlog** (alert if > 1k items)
+3. **Cache hit rate** (target > 90%)
+4. **Error rates** (alert if > 0.1%)
+
+### Disaster Recovery
+1. **Backfill pipeline**: Rebuild ACLs from event log
+2. **Degraded mode**: Fallback to stricter privacy
+3. **Regional failover**: Multi-region deployment
 
 ---
 
 ## 14. Diagrams
-_(To be attached: Component diagram, sequence flow of post creation and privacy check, data flow for ACL build)_
+
+### Sequence Diagram: Post Visibility Check
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant P as Privacy Service
+    participant G as Graph Service
+    participant R as Redis
+    
+    C->>P: Can view post 123?
+    P->>R: Get cached ACL
+    alt Cache hit
+        R-->>P: Return ACL
+    else Cache miss
+        P->>G: Check friendship(user456, user123)
+        G-->>P: false
+        P->>R: Cache result
+    end
+    P-->>C: Deny access
+```
 
 ---
 
 ## 15. Mock Interview Q&A
 
-**Q: How would you support visibility like "Friends except some people"?**
-> Add a `deny_list_id` to the privacy setting and apply it during access evaluation.
+**Q: How would you redesign if we needed to support "Friends who went to same school"?**
 
-**Q: What happens when a user unfriends someone?**
-> Trigger an event, recompute any ACLs involving that user, and update caches.
+> **Answer**: 
+> 1. Extend data model with education history
+> 2. Create materialized view of "school friends"
+> 3. Add new visibility type "SCHOOL_FRIENDS"
+> 4. Implement background job to maintain relationships
+> 5. Add caching layer for school affiliations
 
-**Q: How would you handle a user with 10M friends?**
-> Use lazy evaluation, sharded friend lists, and Bloom filters for membership checks.
+**Q: How to handle a celebrity with 50M followers posting content?**
 
-**Q: How do you ensure privacy changes are fast?**
-> Use strong consistency on writes, async propagation to ACL cache, and real-time invalidation on hot content.
+> **Answer**:
+> 1. Special-case handling for high-fanout users
+> 2. Skip fanout for PUBLIC content
+> 3. Use probabilistic data structures for checks
+> 4. Tiered caching (edge caches for hot content)
+> 5. Rate limit privacy changes for these accounts
 
-**Q: What are the biggest failure points?**
-> - ACL builder failures
-> - Event stream lag
-> - Stale caches
-> Implement alerts, retries, and backfills for each.
+**Q: What would you monitor in production?**
+
+> **Answer**:
+> 1. ACL build latency distribution
+> 2. Cache hit/miss ratios by region
+> 3. Graph traversal depth statistics
+> 4. Error rates by failure type
+> 5. Privacy change reversal patterns
 
 ---
 
-> This design ensures high scalability, flexibility in policy enforcement, low-latency reads, and strong control for users over their content.
+## Final Recommendations
 
----
+1. **Phase 1**: Implement core ACL system with basic visibility levels
+2. **Phase 2**: Add custom lists and retroactive changes
+3. **Phase 3**: Introduce advanced policy engine and plugins
+4. **Continuous**: Monitor and optimize hot paths
 
+**Key Insights**:
+- Privacy systems require careful balance between flexibility and performance
+- Hybrid evaluation strategies work best at scale
+- Versioning is critical for consistent updates
+- Comprehensive auditing is non-negotiable
+```
