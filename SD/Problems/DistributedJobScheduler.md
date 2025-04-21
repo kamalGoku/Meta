@@ -68,3 +68,9 @@ POST /jobs
 - So have a *Global Secondary Index (GSI)* as `userId` in Execution Table, which makes the queries faster
 
 # Deep Dives
+### 1) How can we ensure the system executes jobs within 2s of their scheduled time?
+
+### 2) How can we ensure the system is scalable to support up to 10k jobs per second?
+
+### 3) How can we ensure at least once execution of jobs?
+
