@@ -65,6 +65,6 @@ POST /jobs
 
 ### 2) Users should be able to monitor the status of their jobs
 - Querying for the jobs by userId needs to look up the  jobs table and the execution table
-- So have a *Global Secondary Index* as `userId` in Execution Table, which makes the queries faster
+- So have a *Global Secondary Index (GSI)* as `userId` in Execution Table, which makes the queries faster
 
 # Deep Dives
