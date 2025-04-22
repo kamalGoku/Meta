@@ -60,6 +60,8 @@ POST /jobs
   "attempt": 0
 }
 ```
+- *partition-key* = user-id
+- *sort-key* = execution-time
 - `time_bucket` will give the next hour tasks, and `execution_time` will give the exact time to execute them
 - This makes the query easier to look at 1-2 buckets
 
@@ -68,9 +70,36 @@ POST /jobs
 - So have a *Global Secondary Index (GSI)* as `userId` in Execution Table, which makes the queries faster
 
 # Deep Dives
-### 1) How can we ensure the system executes jobs within 2s of their scheduled time?
-
-### 2) How can we ensure the system is scalable to support up to 10k jobs per second?
-
+### 1) How can we ensure the system executes jobs within 2 seconds of their scheduled time?
+- Querying the main DB every 2s will have 20k operations is heavy and can cause schedule delay, performance impact
+- We need to poll the DB every 5 minutes and get the next execution jobs and put them in a Message queue, workers will take from the queue and execute
+- This 5-minute extra delay will give extra buffer, but the queue is still FIFO; you need a priority queue
+- Message Queue:
+  - Rabbit MQ as Message Queue - it is good, but doesn't support message delay, natively, rather with a plugin, doesn't have retries
+  - Amazon SQS - has delayed message functionality and also has retries
+  
+### 2) How can we ensure the system can support up to 10k jobs per second?
+- Scalability for all modules - go from left to right
+- Job Creation:
+  - is one-time job >> recurring, then we have more writes
+  - Better to have a Kafka or Rabbitmq for handling the surge of schedule requests.
+- DB:
+  - Tables are already partitioned with partition keys, and Cassandra or Dynamodb will easily scale
+  - These Databases support a million writes/s
+- Message Queue:
+  - 10k/s * 300 sec = 30000000 (3M) messages in 5 minutes, each 200KB in size
+  - SQS takes care of the scale and sharding automatically
+- Workers:
+  - Containers: Cost-effective, but don't scale automatically
+  - Lambda: short-lived and scalable automatically, but cold start
+  - Better to go with Containers with ECS as it is cost-effective
+    
 ### 3) How can we ensure at least once execution of jobs?
-
+- Visible Failures: having errors in logs from worker execution
+- Invisible Failures: Worker failures
+- Handle Worker Failure:
+  - Job Lease: Mark the DB as Worker A is executing, so another worker will not take the job and retry if it fails
+  - SQS: SQS makes the job invisible if assigned to the worker, and if it fails, it will release the visibility
+- Handle idempotency:
+  - Have a deduplication table
+  - Create idempotent tasks
