@@ -14,8 +14,9 @@
 - Simple system with queue, crawl service and DB
 
 ## Deep Dives
-### 1) How can we ensure we are fault tolerant and don't lose progress?
-- split the system into small pipelined stages
+### 1) How can we ensure we are fault-tolerant and don't lose progress?
+- Split the system into small pipelined stages
+- Have a MetaData DB to store the info on URL status(Postgresql/Mysql), upon failure get statu on the URL
 - 
 ### 2) How can we ensure politeness and adhere to robots.txt?
 ### 3) How to scale to 10B pages and efficiently crawl them in under 5 days?
