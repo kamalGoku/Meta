@@ -16,7 +16,7 @@
 ## Deep Dives
 ### 1) How can we ensure we are fault-tolerant and don't lose progress?
 - Split the system into small pipelined stages
-- Have a MetaData DB to store the info on URL status(Postgresql/Mysql), upon failure, get the status on the URL
+- Have a MetaData DB to store the info on URL status(Postgresql/Mysql), upon failure, get the status of the URL
 - The processing queue stores the ID of the URL, and storing the HTML files in the queue is expensive
 - What about if we fail to fetch a URL?
   - URL fetch is likely to fail
@@ -30,11 +30,20 @@
 - Robots.txt has "User agent", "Disallow", "crawl delay".
 - To ensure politeness, adhere to robots.txt and ratelimiting
 - robots.txt
-  - is one-time download(may vary), don't scan the disallow directories, and poll for specified crawl delay
-  - during dequeue from queue, if the URL is within crawl-delay, push it back to queue
-  - store the file in metadata DB
+  - is a one-time download(may vary), don't scan the disallow directories, and poll for the specified crawl delay
+  - During dequeue from the queue, if the URL is within the crawl-delay, push it back to the queue
+  - Store the file in the metadata DB
 - rate-limiting
-  - have a redis cache and store the last polled time in it. use sliding-window algo
-  - check the cache before polling website
-- 
+  - Have a Redis cache and store the last polled time in it. use sliding-window algo
+  - Check the cache before polling the website
+
 ### 3) How to scale to 10B pages and efficiently crawl them in under 5 days?
+- 10B pages in 5 days,
+- AWS instance 400 Gbps / 8 bits/byte / 2MB/page = 25,000 pages/second, we use 30% of it: 25,000 pages/second * 30% = 7,500 pages/second.
+- 10^10/7,500 pages/second ~ 15 days, divide to 4 machines = 3.5 days/machine
+- Parser workers: Scale according to the crawlers
+- DNS: have multiple DNS providers or cache the response from DNS
+- Efficiency: What if multiple link points to the same page?
+  - Hash and store the index in the Metadata DB
+  - Bloom filters: more efficient but less accurate
+- Traps: Have a max depth to crawl till that depth
