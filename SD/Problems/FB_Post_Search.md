@@ -47,10 +47,11 @@
 - Post Creation:
   - Ingestion service will be overwhelmed with requests, so have a log/stream service, Kafka, before that.
 - Like Event:
-  - batch processing of likes
+  - batch processing of likes, write to Kafka in batches
   - Good Sol: Batch of 100 likes. But useful only for popular posts. also latency
-  - Great Sol: Batch processing in power of 2, e.g. 2,4,8 etc, but even that is not sufficient
+  - Great Sol: Batch processing in power of 2, e.g. 2,4,8, etc, but even that is not sufficient
                During user query, get the latest from Like Service (Two Stage Architecture)
     
 ### 4) How can we optimise the storage of our system?
-- move old posts to S3
+- The unused or least recently used keywords will be eliminated by a batch job
+- Move unused keywords to blob storage(S3)
