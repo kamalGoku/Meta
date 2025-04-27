@@ -33,4 +33,14 @@ https://medium.com/@techturtles51/system-design-interview-top-k-heavy-hitters-ab
   - Doesn't need to scale with an increase in videos, as it's fixed memory
   - Cons: Not precise
 - File Storage + MapReduce Jobs
-  - The videos will be consumed by the Kafka Queue 
+  - Give precise results
+  - The videos will be consumed by the Kafka Queue and saved in HDFS
+  - Run MapReduce jobs on the HDFS data every 1 hour
+    - One job aggregates data based on video ID
+    - The second job calculates the top K video IDS
+  - Every hour, the data will be stored in the DB
+
+## Deep Dive
+
+- Final solution to combine the fast and slow approaches.
+- 2 paths of data processing from Kafka, one to Count-min sketch and another to File Storage+MapReduce 
