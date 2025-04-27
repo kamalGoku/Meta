@@ -1,6 +1,3 @@
-Here's the consolidated deep dive document incorporating all the inputs:
-
-```markdown
 # Facebook Privacy Settings - Comprehensive System Design (Staff-Level)
 
 ---
@@ -377,4 +374,3 @@ sequenceDiagram
 - Hybrid evaluation strategies work best at scale
 - Versioning is critical for consistent updates
 - Comprehensive auditing is non-negotiable
-```
