@@ -11,22 +11,22 @@
 
 DON'Ts
 - Exhibiting aggression/contempt
-- Not grounding your points in logic Using labels like "idiot" or "annoying"
+- Not grounding your points in logic using labels like "idiot" or "annoying"
 - Refusing to admit you were wrong
-- Self-centered/egotistical behaviors
+- Self-centred/egotistical behaviours
 
 DOs:
 - Having Empathy for the other person
-- Trying to understand the other person's POV Having clear, logical rationale for your position
+- Trying to understand the other person's POV having a clear, logical rationale for your position
 - Using objective data to argue your point
 - Seeking mediation from senior engineers/managers if a consensus cannot be reached
 - Accepting the outcome regardless of being right or wrong and moving forward
   
 ### Tell me about a time you had a conflict with a coworker *
+- [https://github.com/kamalGoku/Meta/blob/main/Behaviour/Conflict.md]
 
-### Tell me about a co worker who you did not enjoy working with
-
-### Tell me about a time you had to work with difficult colleague
+### Tell me about a co-worker whom you did not enjoy working with
+### Tell me about a time you had to work with a difficult colleague
 
 
 ## Managing Large Scale/Ambiguous projects
@@ -39,13 +39,15 @@ DONTs:
 
 DOs:
 - Asking clarifying questions
-- Gathering data to build or verifyhypothesis and
+- Gathering data to build or verify a hypothesis and
 - Understanding who the domain experts are leveraging their knowledge
 - Understanding what is already known about the problem space and what remains unknown
 - Not trying to boil the ocean and limiting the scope of the problem initially
 - Compromising with partner teams on features/functionality
-- Forming a short term/long term action plan
+- Forming a short-term/long-term action plan
 - Formulating and communicating the tradeoffs of various approaches
+
+#### Develop the story on TAM design in Marvell
 
 ### Building a system with unclear requirements*
 
