@@ -10,6 +10,18 @@
 - Efficiency to crawl the web in under 5 days.
 - Scalability to handle 10B pages.
 
+## System Interface
+ - Input: seed URLS
+ - Output: text data extracted from web pages
+
+## Data Flow
+- Take seed URLS and add to the queue
+- req IP from DNS
+- get HTML page from IP
+- Extract data and URL from HTML and put URL in queue
+- Store data in the DB
+- repeat
+
 ## High-Level Design
 - Simple system with queue, crawl service and DB
 
