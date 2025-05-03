@@ -65,13 +65,13 @@
   - This hybrid method of Kinesis + Spark ensures the analytics are fast and correct
   - 
 ### 3) How can we prevent abuse from users clicking on ads multiple times?
-    - AdPlacement Service generates all with an impression ID
-    - When a user clicks the ad, the click data is sent with the impression ID.
-    - Click service checks the signature of the impression ID, and if valid, it puts it in the Redis cache
-    - If the impression ID is already present, then the click is not added to Kinesis, else we do
-    - We are having the fingerprint here to check if any malicious user is mimicking the impression ID.
+  - AdPlacement Service generates all with an impression ID
+  - When a user clicks the ad, the click data is sent with the impression ID.
+  - Click service checks the signature of the impression ID, and if valid, it puts it in the Redis cache
+  - If the impression ID is already present, then the click is not added to Kinesis; else we do
+  - We are having the fingerprint here to check if any malicious user is mimicking the impression ID.
     - The cache can be scaled and is fault-tolerant
 
 ### 4) How can we ensure that advertisers can query metrics at low latency
-    - We use OLAP, which aggregates the data
-    - We can run a Cron job which aggregates for days, months and years for fast access
+  - We use OLAP, which aggregates the data
+  - We can run a Cron job which aggregates for days, months and years for fast access
