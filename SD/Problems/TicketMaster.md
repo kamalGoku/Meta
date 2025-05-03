@@ -1,4 +1,27 @@
-# High-Level Design
+## Functional Req
+  - Users should be able to view events
+  - Users should be able to search for events
+  - Users should be able to book tickets to events
+
+## Non-Functional Req
+ - Highly available for the search of events
+ - Prioritise consistency for booking tickets
+ - Scalable to a large number of events(10M events)
+ - low latency for viweing events
+
+## Entities
+  - User, Event, Booking, Ticket, Venue, Performer
+    
+## API
+  - GET /events/:eventId
+  - POST /bookings/:eventId ->bookingId
+    {
+      ticketId = []
+      paymentDetails = ''
+    }
+  - GET /events/search?keyword={keyword}&start={start_date}&end={end_date}&pageSize={page_size}&page={page_number} -> Event[]
+
+## High-Level Design
 
 ### 1) Users should be able to view events
   - Event Service and Event DB
@@ -10,7 +33,7 @@
   - Booking Service and DB, have a booking table and a Ticket Table
   - Payment processor/service to process payments
 
-# Deep Dives
+## Deep Dives
 
 ### 1) How do we improve the booking experience by reserving tickets?
   - Having a lock on DB is bad, gives load to DB, the Postgresql DB has no TTL support
