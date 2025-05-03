@@ -74,6 +74,7 @@ POST /jobs
 - Querying the main DB every 2s will have 20k operations is heavy and can cause schedule delay, performance impact
 - We need to poll the DB every 5 minutes and get the next execution jobs and put them in a Message queue, workers will take from the queue and execute
 - This 5-minute extra delay will give extra buffer, but the queue is still FIFO; you need a priority queue
+- Bad Sol: Having Redis Sorted List - need custom retry mechanism
 - Message Queue:
   - Rabbit MQ as Message Queue - it is good, but doesn't support message delay, natively, rather with a plugin, doesn't have retries
   - Amazon SQS - has delayed message functionality and also has retries
