@@ -36,7 +36,8 @@
   - Use Amazon SQS with exponential backoff - can configure retries, has visibility timeout. Cap the maximum retries.
 - What happens if a crawler goes down?
   - Have a backup crawler to take up where the first crawler left off
-  - Both Kafka and SQS store the events
+  - Kafka: crawler tracks progress with offsets
+  - SQS: has a visibility timeout for the crawler to fetch
   
 ### 2) How can we ensure politeness and adhere to robots.txt?
 - Robots.txt has "User agent", "Disallow", "crawl delay".
