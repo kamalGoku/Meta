@@ -4,6 +4,11 @@
 
 ## Non-Functional Req
   - ask about the scale, like 10M AU and 10K clicks/sec
+  - Scalable to support a peak of 10k clicks per second
+  - Low-latency analytics queries for advertisers (sub-second response time)
+  - Fault-tolerant and accurate data collection. We should not lose any click data.
+  - As real-time as possible. Advertisers should be able to query data as soon as possible after the click.
+  - Idempotent click tracking. We should not count the same click multiple times.
 
 ## System Interface
  - input: Ad click metrics from users
