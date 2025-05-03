@@ -1,4 +1,6 @@
 ## Function Req
+  - Users can click on an ad and be redirected to the advertiser's website
+  - Advertisers can query ad click metrics over time with a minimum granularity of 1 minute
 
 ## Non-Functional Req
   - ask about the scale, like 10M AU and 10K clicks/sec
