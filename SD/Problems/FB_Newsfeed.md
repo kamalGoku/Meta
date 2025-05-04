@@ -12,6 +12,32 @@
 - The system should handle the massive number of users(2B)
 - Users can follow/followed by an unlimited number of users
 
+## Enitities
+  - User, Follow, Post
+
+## API
+  - POST /post
+    Request: 
+    {
+        "content": {
+    
+        }
+    }
+    Response:
+    {
+        "postId": // ...
+    }
+  - POST /user/[id]/followers
+    Request: 
+    {
+    
+    }
+  - GET /feed
+    Response: 
+    {
+        items: POST[]
+    }
+
 ## High-Level Design
 ### 1) Users should be able to create posts.
 - Post Service and Post Table
