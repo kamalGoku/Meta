@@ -16,8 +16,9 @@
   - User, Follow, Post
 
 ## API
+```
   - POST /post
-    Request: 
+    Request:
     {
         "content": {
     
@@ -37,7 +38,7 @@
     {
         items: POST[]
     }
-
+```
 ## High-Level Design
 ### 1) Users should be able to create posts.
 - Post Service and Post Table
