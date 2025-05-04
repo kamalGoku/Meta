@@ -14,6 +14,14 @@
 - Old posts should be searchable(with a delay)
 - Highly available
 
+## Scale
+
+- Posts: 1B * 1/day  / 100K sec/day = ~ 10K post/sec
+- Likes: 1B * 10/day / 100K sec/day = ~ 100K likes/sec
+- Search: 1B * 1/day ~ 10K search/sec
+- Post searchable: 1B * 365 * 10yrs = 3.6T posts
+- Storage : 3.6T * 1 KB/post = 3.6PB 
+
 ## High-Level Design
 
 ### 1) Users should be able to create and like posts.
