@@ -1,5 +1,7 @@
 # GROWTH MINDSET
 
+## "Describe a situation that highlights your commitment to personal and professional growth."
+
 1) Same story as "perseverance"
 2) Growth Mindset: Taking on Firmware Design Without Prior Experience
 
