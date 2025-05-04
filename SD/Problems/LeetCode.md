@@ -1,7 +1,36 @@
-# High-Level Design
+# LEETCODE
+
+## Functional Req
+  - Users should be able to view a list of coding problems.
+  - Users should be able to view a given problem, code a solution in multiple languages.
+  - Users should be able to submit their solution and get instant feedback.
+  - Users should be able to view a live leaderboard for competitions.
+
+## Non-Functional Req
+  - The system should prioritise availability over consistency.
+  - The system should support isolation and security when running user code.
+  - The system should return submission results within 5 seconds.
+  - The system should scale to support competitions with 100K users.
+
+## Enitities
+  - Problem, Submission, Leaderboard
+
+## API
+```
+  - GET /problems?page=1&limit=100 -> Partial<Problem>[]
+  - GET /problems/:id?language={language} -> Problem
+  - POST /problems/:id/submit -> Submission
+    {
+      code: string,
+      language: string
+    }
+  - GET /leaderboard/:competitionId?page=1&limit=100 -> Leaderboard
+```
+
+## High-Level Design
 ### 1) Users should be able to view a list of coding problems
   - User to Server to DB, query problems
-  - Problem with having id, title, description, code sub, testcases
+  - Problem Table:  problemId, title, description, code sub, testcases
 
 ### 2) Users should be able to view a given problem and code a solution
  - User queries the problem with problemId, a code stub for that problem is given
@@ -16,7 +45,7 @@
   - Create a competition, with a max time of 90min, 4 problems, max users 100k
   - User queries the DB every 5 seconds with the competitionId as key, checks all submissions and groups by userId
 
-# Deep Dives
+## Deep Dives
 ### 1) How will the system support isolation and security when running user code?
   - Have a read-only file system
   - CPU and memory bounds
