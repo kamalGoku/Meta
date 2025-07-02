@@ -5,6 +5,7 @@
 - **In-memory**, **key-value** data store  
 - **Single-threaded**, extremely **fast and predictable latency**  
 - Often used for **caching**, **real-time analytics**, **queues**, **leaderboards**, etc.
+- written in C
 
 ---
 
@@ -14,7 +15,7 @@
 |--------------------|-----------------------------------------------------------------------------|
 | **In-memory**      | All operations are done in memory → very fast                              |
 | **Data Structures**| Strings, Hashes, Lists, Sets, Sorted Sets, Bitmaps, HyperLogLogs, Streams  |
-| **Atomic ops**     | All Redis operations are atomic due to single-threaded model               |
+| **Atomic ops**     | All Redis operations are atomic due to the single-threaded model           |
 | **Pub/Sub**        | Messaging pattern – enables real-time event processing                     |
 | **Streams**        | Log-like structure → similar to Kafka-style messaging                      |
 | **TTL support**    | Native key expiration → great for caches                                   |
